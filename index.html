@@ -240,7 +240,7 @@
                         <strong>Projectile Multibarrels</strong>
                         <p>Adds split paths to your primary spread weapon</p>
                     </div>
-                    <button onclick="buyUpgrade('spread', 500)">5000 Sv</button>
+                    <button onclick="buyUpgrade('spread', 500)">500 Sv</button>
                 </div>
                 <div class="shop-item">
                     <div class="shop-info">
@@ -871,16 +871,29 @@
                 let bx = player.x + Math.cos(turretAngle) * 20; let by = player.y + Math.sin(turretAngle) * 20;
                 let interval = Math.max(4, 12 - stats.fireRateLevel);
                 
-                if (stats.spread === 1) {
-                    bullets.push(new Bullet(bx, by, turretAngle, "PLAYER"));
-                } else if (stats.spread === 2) {
-                    bullets.push(new Bullet(bx, by, turretAngle - 0.08, "PLAYER"));
-                    bullets.push(new Bullet(bx, by, turretAngle + 0.08, "PLAYER"));
-                } else {
-                    bullets.push(new Bullet(bx, by, turretAngle, "PLAYER"));
-                    bullets.push(new Bullet(bx, by, turretAngle - 0.16, "PLAYER"));
-                    bullets.push(new Bullet(bx, by, turretAngle + 0.16, "PLAYER"));
-                }
+if (stats.spread === 1) {
+    bullets.push(new Bullet(bx, by, turretAngle, "PLAYER"));
+} else if (stats.spread === 2) {
+    bullets.push(new Bullet(bx, by, turretAngle - 0.08, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle + 0.08, "PLAYER"));
+} else if (stats.spread === 3) {
+    bullets.push(new Bullet(bx, by, turretAngle, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle - 0.16, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle + 0.16, "PLAYER"));
+} else if (stats.spread === 4) {
+    // 4 Projectiles: Wider spread
+    bullets.push(new Bullet(bx, by, turretAngle - 0.24, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle - 0.08, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle + 0.08, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle + 0.24, "PLAYER"));
+} else if (stats.spread === 5) {
+    // 5 Projectiles: Full Fan
+    bullets.push(new Bullet(bx, by, turretAngle, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle - 0.15, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle + 0.15, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle - 0.30, "PLAYER"));
+    bullets.push(new Bullet(bx, by, turretAngle + 0.30, "PLAYER"));
+}
                 fireCooldown = interval;
             }
 
