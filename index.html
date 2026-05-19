@@ -375,25 +375,44 @@
                 }
                 player.x = TILE_SIZE * 2; player.y = Math.floor(ROWS / 2) * TILE_SIZE + TILE_SIZE / 2;
                 
-                // Deploy exactly 20 randomized upsized subboss units evenly distributed across coordinates
-                let subBossTypes = ["DRONE", "ROBO"];
-                let spacingX = Math.floor((canvas.width - 250) / 5);
-                let spacingY = Math.floor((canvas.height - 100) / 4);
+// --- ELITE RETINUE VANGUARD: SECURE SPAWN SYSTEM ---
+let subBossTypes = ["DRONE", "ROBO"];
+let potentialSpawns = [];
 
-                let spawnedCount = 0;
-                for (let i = 0; i < 5; i++) {
-                    for (let j = 0; j < 4; j++) {
-                        let poolType = subBossTypes[Math.floor(Math.random() * subBossTypes.length)];
-                        let spawnX = 200 + (i * spacingX) + (Math.random() * 30 - 15);
-                        let spawnY = 60 + (j * spacingY) + (Math.random() * 30 - 15);
-                        
-                        let eliteUnit = new Enemy(spawnX, spawnY, poolType);
-                        eliteUnit.radius = 25; 
-                        eliteUnit.hp *= 4; 
-                        eliteUnit.isSubBoss = true;
-                        enemies.push(eliteUnit);
-                        spawnedCount++;
-                    }
+// 1. Find all valid floor tiles (grid[r][c] === 0) that aren't too close to the player
+for (let r = 2; r < ROWS - 2; r++) {
+    for (let c = 2; c < COLS - 2; c++) {
+        if (grid[r][c] === 0 && Math.hypot(c * TILE_SIZE - player.x, r * TILE_SIZE - player.y) > 150) {
+            potentialSpawns.push({ x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2 });
+        }
+    }
+}
+
+// 2. Shuffle the available spots and pick 20
+potentialSpawns.sort(() => Math.random() - 0.5);
+
+let spawnedCount = 0;
+for (let i = 0; i < Math.min(20, potentialSpawns.length); i++) {
+    let pos = potentialSpawns[i];
+    let poolType = subBossTypes[Math.floor(Math.random() * subBossTypes.length)];
+    
+    let eliteUnit = new Enemy(pos.x, pos.y, poolType);
+    eliteUnit.radius = 25; 
+    eliteUnit.hp *= 4; 
+    eliteUnit.isSubBoss = true;
+    
+    // Force them to be stationary or limited movement
+    // Since they are stationary by default in your code, 
+    // we just ensure they don't move randomly.
+    if (eliteUnit.type === "ROBO") {
+        eliteUnit.vx = 0;
+        eliteUnit.vy = 0;
+        eliteUnit.speed = 0; // Set speed to 0 to make them stationary
+    }
+    
+    enemies.push(eliteUnit);
+    spawnedCount++;
+}
                 }
                 
                 exitPortal.active = false;
