@@ -1011,12 +1011,16 @@ if (stats.spread === 1) {
         }
 
         function buyUpgrade(type, cost) {
+            if (type === 'spread' && stats.spread >= 5) {
+        alert("Already at Maximum Multibarrel Capacity!");
+        return; // Exit the function before taking money
+    }
             if (score >= cost) {
                 score -= cost; scoreVal.innerText = score;
                 shopBalanceVal.innerText = score + " Sv";
 
                 if (type === 'fireRate') stats.fireRateLevel += 1;
-                if (type === 'spread') stats.spread = Math.min(3, stats.spread + 1);
+                if (type === 'spread') stats.spread = Math.min(5, stats.spread + 1);
                 if (type === 'flak') stats.flakLevel += 1;
                 if (type === 'missileUpg') stats.missileLevel += 1;
                 if (type === 'speed') player.speed += 0.4; 
