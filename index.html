@@ -360,6 +360,30 @@
             return enemies.filter(e => e.isSubBoss && e.active).length;
         }
 
+        canvas.addEventListener('touchstart', (e) => {
+    isMouseDown = true;
+    updateTouchAngle(e);
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault(); // This is crucial to stop the screen from scrolling
+    updateTouchAngle(e);
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => {
+    isMouseDown = false;
+}, { passive: false });
+
+function updateTouchAngle(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const canvasTouchX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+    const canvasTouchY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+    
+    // Update the turret to follow the touch point
+    turretAngle = Math.atan2(canvasTouchY - player.y, canvasTouchX - player.x);
+}
+
         function generateRogueMap() {
             grid = []; enemies = []; bullets = []; particles = [];
             bossHpBarContainer.style.display = "none";
