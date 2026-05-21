@@ -1033,6 +1033,10 @@ if (stats.spread === 1) {
         alert("Already at Maximum Multibarrel Capacity!");
         return; // Exit the function before taking money
     }
+            if (type === 'speed' && player.speed >= 8.2) { // 8.2 allows upgrades (3.4 -> 8.2)
+        alert("Chassis Thrusters are already at maximum velocity!");
+        return; 
+    }
             if (score >= cost) {
                 score -= cost; scoreVal.innerText = score;
                 shopBalanceVal.innerText = score + " Sv";
