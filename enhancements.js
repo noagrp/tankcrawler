@@ -21,6 +21,9 @@
       #instructions{display:none}
       #hud{padding:7px 10px}
       .stat{font-size:12px}
+      #shopScreen{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-top:18px;padding-bottom:calc(env(safe-area-inset-bottom) + 48px)}
+      #shopScreen .shop-grid{flex:0 0 auto;width:100%}
+      #shopScreen .close-shop-btn{flex:0 0 auto;margin-bottom:12px}
     }
     @media(max-height:740px) and (pointer:coarse){.tc-pad{bottom:calc(env(safe-area-inset-bottom) + 54px)}}
   `;
