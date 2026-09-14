@@ -1,4 +1,4 @@
-const CACHE='tankcrawler-v2';
+const CACHE='tankcrawler-v3';
 const ASSETS=['./','./index.html','./enhancements.js','./manifest.webmanifest','./favicon-32x32.png','./apple-touch-icon.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim()});
