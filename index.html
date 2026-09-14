@@ -61,7 +61,6 @@
             box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
             display: block;
         }
-        /* Top persistent subboss count interface tracker */
         #bossHpBarContainer {
             display: none;
             position: absolute;
@@ -226,48 +225,29 @@
         <div id="shopScreen" class="overlay">
             <h1 style="color: #66fcf1;">ZONE CONTAINMENT MANIFESTED</h1>
             <div class="shop-budget-indicator">Available Balance: <span id="shopBalanceVal">0 Sv</span></div>
-            
             <div class="shop-grid">
                 <div class="shop-item">
-                    <div class="shop-info">
-                        <strong>Shooting Speed Coils</strong>
-                        <p>Decreases main cannon reloading intervals</p>
-                    </div>
+                    <div class="shop-info"><strong>Shooting Speed Coils</strong><p>Decreases main cannon reloading intervals</p></div>
                     <button onclick="buyUpgrade('fireRate', 300)">300 Sv</button>
                 </div>
                 <div class="shop-item">
-                    <div class="shop-info">
-                        <strong>Projectile Multibarrels</strong>
-                        <p>Adds split paths to your primary spread weapon</p>
-                    </div>
+                    <div class="shop-info"><strong>Projectile Multibarrels</strong><p>Adds split paths to your primary spread weapon</p></div>
                     <button onclick="buyUpgrade('spread', 500)">500 Sv</button>
                 </div>
                 <div class="shop-item">
-                    <div class="shop-info">
-                        <strong>Thermal Flak Shells</strong>
-                        <p>Increases splash damage + AoE blast radius of forward weapon</p>
-                    </div>
+                    <div class="shop-info"><strong>Thermal Flak Shells</strong><p>Increases splash damage + AoE blast radius of forward weapon</p></div>
                     <button onclick="buyUpgrade('flak', 400)">400 Sv</button>
                 </div>
                 <div class="shop-item">
-                    <div class="shop-info">
-                        <strong>Homing Missile Calibrator</strong>
-                        <p>Upgrades seeker rocket damage and firing speed</p>
-                    </div>
+                    <div class="shop-info"><strong>Homing Missile Calibrator</strong><p>Upgrades seeker rocket damage and firing speed</p></div>
                     <button onclick="buyUpgrade('missileUpg', 400)">400 Sv</button>
                 </div>
                 <div class="shop-item">
-                    <div class="shop-info">
-                        <strong>Overcharged Thrusters</strong>
-                        <p>Permanently amplifies tank chassis movement velocity</p>
-                    </div>
+                    <div class="shop-info"><strong>Overcharged Thrusters</strong><p>Permanently amplifies tank chassis movement velocity</p></div>
                     <button onclick="buyUpgrade('speed', 300)">300 Sv</button>
                 </div>
                 <div class="shop-item">
-                    <div class="shop-info">
-                        <strong>Dreadnought Hull Armor</strong>
-                        <p>Expands max framework capacity and repairs hull</p>
-                    </div>
+                    <div class="shop-info"><strong>Dreadnought Hull Armor</strong><p>Expands max framework capacity and repairs hull</p></div>
                     <button onclick="buyUpgrade('hullMax', 400)">400 Sv</button>
                 </div>
             </div>
@@ -304,29 +284,17 @@
 
         let TILE_SIZE = 56;
         let COLS = 0; let ROWS = 0;
-
         let mapDepth = 1; let score = 0;
         let hp = 100; let maxHp = 100;
         let gameState = "PLAYING";
-
         let grid = [];
         let player = { x: 0, y: 0, radius: 16, speed: 3.4, angle: 0 };
         let exitPortal = { x: 0, y: 0, radius: 22, active: true };
-
         let bullets = []; let enemies = []; let particles = [];
-
-        let stats = { 
-            fireRateLevel: 1, 
-            spread: 1, 
-            flakLevel: 1,
-            missileLevel: 1,
-            damage: 1
-        };
-
-        let fireCooldown = 0; 
+        let stats = { fireRateLevel: 1, spread: 1, flakLevel: 1, missileLevel: 1, damage: 1 };
+        let fireCooldown = 0;
         let autoMissileTimer = 0;
         let autoFlakTimer = 0;
-        
         let isMouseDown = false; let turretAngle = 0;
         let keys = {};
 
@@ -334,7 +302,6 @@
             const hudHeight = document.getElementById('hud').offsetHeight;
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight - hudHeight;
-            
             COLS = Math.floor(canvas.width / TILE_SIZE);
             ROWS = Math.floor(canvas.height / TILE_SIZE);
             if (COLS < 12) COLS = 12;
@@ -343,7 +310,6 @@
 
         window.addEventListener('keydown', (e) => keys[e.code] = true);
         window.addEventListener('keyup', (e) => keys[e.code] = false);
-
         window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -352,7 +318,6 @@
             const canvasMouseY = (e.clientY - rect.top) * scaleY;
             turretAngle = Math.atan2(canvasMouseY - player.y, canvasMouseX - player.x);
         });
-
         window.addEventListener('mousedown', () => isMouseDown = true);
         window.addEventListener('mouseup', () => isMouseDown = false);
 
@@ -363,22 +328,18 @@
         function generateRogueMap() {
             grid = []; enemies = []; bullets = []; particles = [];
             bossHpBarContainer.style.display = "none";
-            
             if (mapDepth % 5 === 0) {
                 mapType.innerText = "[ELITE RETINUE CONTAINMENT ZONE]";
                 for (let r = 0; r < ROWS; r++) {
                     grid[r] = [];
-                    for (let c = 0; c < COLS; c++) {
-                        grid[r][c] = (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) ? 1 : 0;
-                    }
+                    for (let c = 0; c < COLS; c++) grid[r][c] = (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) ? 1 : 0;
                 }
                 player.x = TILE_SIZE * 2; player.y = Math.floor(ROWS / 2) * TILE_SIZE + TILE_SIZE / 2;
                 let subBossTypes = ["DRONE", "ROBO", "FLAME_TANK", "TESLA_PYLON", "VIPER_TOWER"];
                 let potentialSpawns = [];
-                for (let r = 2; r < ROWS - 2; r++) {
-                    for (let c = 2; c < COLS - 2; c++) {
-                        if (grid[r][c] === 0 && Math.hypot(c * TILE_SIZE - player.x, r * TILE_SIZE - player.y) > 150) potentialSpawns.push({ x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2 });
-                    }
+                for (let r = 2; r < ROWS - 2; r++) for (let c = 2; c < COLS - 2; c++) {
+                    if (grid[r][c] === 0 && Math.hypot(c * TILE_SIZE - player.x, r * TILE_SIZE - player.y) > 150)
+                        potentialSpawns.push({ x: c * TILE_SIZE + TILE_SIZE / 2, y: r * TILE_SIZE + TILE_SIZE / 2 });
                 }
                 potentialSpawns.sort(() => Math.random() - 0.5);
                 for (let i = 0; i < Math.min(20, potentialSpawns.length); i++) {
@@ -402,19 +363,20 @@
             while (floorCount < floorTilesNeeded) {
                 let dir = Math.floor(Math.random() * 4), nx = cx, ny = cy;
                 if (dir === 0) ny--; else if (dir === 1) ny++; else if (dir === 2) nx--; else nx++;
-                if (nx > 0 && nx < COLS - 1 && ny > 0 && ny < ROWS - 1) { if (grid[ny][nx] === 1) { grid[ny][nx] = 0; floorCount++; } cx = nx; cy = ny; }
+                if (nx > 0 && nx < COLS - 1 && ny > 0 && ny < ROWS - 1) {
+                    if (grid[ny][nx] === 1) { grid[ny][nx] = 0; floorCount++; }
+                    cx = nx; cy = ny;
+                }
             }
             player.x = TILE_SIZE * 1.5; player.y = TILE_SIZE * 1.5;
             exitPortal.x = cx * TILE_SIZE + TILE_SIZE / 2; exitPortal.y = cy * TILE_SIZE + TILE_SIZE / 2; exitPortal.active = true;
-            for (let r = 1; r < ROWS - 1; r++) {
-                for (let c = 1; c < COLS - 1; c++) {
-                    if (grid[r][c] === 0) {
-                        if (r < 3 && c < 3) continue;
-                        if (Math.abs(c - cx) < 2 && Math.abs(r - cy) < 2) continue;
-                        if (Math.random() < 0.09) {
-                            let pool = ["DRONE", "ROBO", "SHOOTING_TANK", "CHASING_TANK", "FLAME_TANK", "ROCK_BALL", "TESLA_PYLON", "VIPER_TOWER"];
-                            enemies.push(new Enemy(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, pool[Math.floor(Math.random() * pool.length)]));
-                        }
+            for (let r = 1; r < ROWS - 1; r++) for (let c = 1; c < COLS - 1; c++) {
+                if (grid[r][c] === 0) {
+                    if (r < 3 && c < 3) continue;
+                    if (Math.abs(c - cx) < 2 && Math.abs(r - cy) < 2) continue;
+                    if (Math.random() < 0.09) {
+                        let pool = ["DRONE", "ROBO", "SHOOTING_TANK", "CHASING_TANK", "FLAME_TANK", "ROCK_BALL", "TESLA_PYLON", "VIPER_TOWER"];
+                        enemies.push(new Enemy(c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2, pool[Math.floor(Math.random() * pool.length)]));
                     }
                 }
             }
@@ -430,6 +392,7 @@
             for (let m of margins) if (m.r >= 0 && m.r < ROWS && m.c >= 0 && m.c < COLS && grid[m.r][m.c] === 1) return true;
             return false;
         }
+
         function draw3DShadow(ctx, r) { ctx.save(); ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.beginPath(); ctx.arc(6, 8, r, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
         function draw3DExtrudedBlock(ctx, x, y, w, h, z, fill, sideFill) {
             ctx.fillStyle = sideFill; ctx.beginPath(); ctx.moveTo(x,y+h); ctx.lineTo(x+z,y+h+z); ctx.lineTo(x+w+z,y+h+z); ctx.lineTo(x+w,y+h); ctx.closePath(); ctx.fill();
@@ -474,12 +437,45 @@
                 ctx.restore();
             }
         }
+
         class Bullet {
             constructor(x,y,angle,type){this.x=x;this.y=y;this.type=type;this.radius=type==="FLAK"?7.5:((type==="MISSILE"||type==="ENEMY_MISSILE"||type==="VIPER_SHORT_MISSILE")?6:4.5);this.speed=type==="PLAYER"?9.5:(type==="FLAK"?6.5:(type==="ENEMY_MISSILE"?5.2:(type==="VIPER_SHORT_MISSILE"?6.6:5.4)));this.dx=Math.cos(angle)*this.speed;this.dy=Math.sin(angle)*this.speed;this.active=true;this.damage=type==="PLAYER"?stats.damage:(type==="MISSILE"?2+stats.missileLevel:1);this.target=null;this.isMineState=false;this.mineTimer=0;this.viperFuel=38;if(type==="ENEMY_MISSILE"){this.targetX=player.x+(Math.random()*40-20);this.targetY=player.y+(Math.random()*40-20);}}
-            update(){if(this.type==="MISSILE"){if(!this.target||!this.target.active||enemies.indexOf(this.target)===-1){let closest=99999;enemies.forEach(e=>{let d=Math.hypot(e.x-this.x,e.y-this.y);if(d<closest&&e.type!=="ROCK_BALL"&&e.active){closest=d;this.target=e;}})}if(this.target){let a=Math.atan2(this.target.y-this.y,this.target.x-this.x);this.dx=Math.cos(a)*this.speed;this.dy=Math.sin(a)*this.speed;}this.x+=this.dx;this.y+=this.dy;}else if(this.type==="VIPER_SHORT_MISSILE"){this.viperFuel--;if(this.viperFuel<=0){this.active=false;triggerExplosion(this.x,this.y,"#a366ff");return;}let a=Math.atan2(player.y-this.y,player.x-this.x);this.x+=Math.cos(a)*this.speed;this.y+=Math.sin(a)*this.speed;}else if(this.type==="ENEMY_MISSILE"){if(!this.isMineState){let d=Math.hypot(this.targetX-this.x,this.targetY-this.y);if(d<=15||checkWallCollision(this.x+this.dx,this.y+this.dy,this.radius)){this.isMineState=true;this.dx=this.dy=0;}else{let a=Math.atan2(this.targetY-this.y,this.targetX-this.x);this.x+=Math.cos(a)*this.speed;this.y+=Math.sin(a)*this.speed;}}else{this.mineTimer++;if(this.mineTimer>=300||Math.hypot(player.x-this.x,player.y-this.y)<=player.radius+this.radius+14){this.active=false;triggerExplosion(this.x,this.y,"#ff0055");hp=Math.max(0,hp-16);hpVal.innerText=Math.floor(hp);if(hp<=0)triggerGameOver();return;}}}else{this.x+=this.dx;this.y+=this.dy;}if(this.type!=="ENEMY_MISSILE"&&checkWallCollision(this.x,this.y,this.radius)){if(this.type==="FLAK")triggerAoeExplosion(this.x,this.y);this.active=false;}}
-            draw(){if(this.type==="FLAK"){ctx.fillStyle="#ff3333";ctx.shadowBlur=10;ctx.shadowColor="#ff3333";}else if(this.type==="MISSILE"){ctx.fillStyle="#ffcc00";ctx.shadowBlur=8;ctx.shadowColor="#ffcc00";}else if(this.type==="VIPER_SHORT_MISSILE"){ctx.fillStyle="#c299ff";ctx.shadowBlur=8;ctx.shadowColor="#a366ff";}else if(this.type==="ENEMY_MISSILE"){ctx.fillStyle=this.isMineState?"#ff3300":"#ff0055";ctx.shadowBlur=8;ctx.shadowColor=ctx.fillStyle;}else ctx.fillStyle=this.type==="PLAYER"?(stats.damage>1?'#d645ff':'#66fcf1'):'#ff4c4c';ctx.beginPath();ctx.arc(this.x,this.y,this.isMineState?this.radius+2:this.radius,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;if(this.isMineState){ctx.strokeStyle="rgba(255,51,0,.25)";ctx.beginPath();ctx.arc(this.x,this.y,this.radius+14,0,Math.PI*2);ctx.stroke();}}
+            update(){
+                if(this.type==="MISSILE"){
+                    if(!this.target||!this.target.active||enemies.indexOf(this.target)===-1){let closest=99999;enemies.forEach(e=>{let d=Math.hypot(e.x-this.x,e.y-this.y);if(d<closest&&e.type!=="ROCK_BALL"&&e.active){closest=d;this.target=e;}})}
+                    if(this.target){let a=Math.atan2(this.target.y-this.y,this.target.x-this.x);this.dx=Math.cos(a)*this.speed;this.dy=Math.sin(a)*this.speed;}
+                    this.x+=this.dx;this.y+=this.dy;
+                }else if(this.type==="VIPER_SHORT_MISSILE"){
+                    this.viperFuel--;if(this.viperFuel<=0){this.active=false;triggerExplosion(this.x,this.y,"#a366ff");return;}
+                    let a=Math.atan2(player.y-this.y,player.x-this.x);this.x+=Math.cos(a)*this.speed;this.y+=Math.sin(a)*this.speed;
+                }else if(this.type==="ENEMY_MISSILE"){
+                    if(!this.isMineState){
+                        let d=Math.hypot(this.targetX-this.x,this.targetY-this.y);
+                        if(d<=15||checkWallCollision(this.x+this.dx,this.y+this.dy,this.radius)){this.isMineState=true;this.dx=this.dy=0;}
+                        else{let a=Math.atan2(this.targetY-this.y,this.targetX-this.x);this.x+=Math.cos(a)*this.speed;this.y+=Math.sin(a)*this.speed;}
+                    }else{
+                        this.mineTimer++;
+                        if(this.mineTimer>=300||Math.hypot(player.x-this.x,player.y-this.y)<=player.radius+this.radius+14){this.active=false;triggerExplosion(this.x,this.y,"#ff0055");hp=Math.max(0,hp-16);hpVal.innerText=Math.floor(hp);if(hp<=0)triggerGameOver();return;}
+                    }
+                }else{this.x+=this.dx;this.y+=this.dy;}
+                if(this.type!=="ENEMY_MISSILE"&&checkWallCollision(this.x,this.y,this.radius)){if(this.type==="FLAK")triggerAoeExplosion(this.x,this.y);this.active=false;}
+            }
+            draw(){
+                if(this.type==="FLAK"){ctx.fillStyle="#ff3333";ctx.shadowBlur=10;ctx.shadowColor="#ff3333";}
+                else if(this.type==="MISSILE"){ctx.fillStyle="#ffcc00";ctx.shadowBlur=8;ctx.shadowColor="#ffcc00";}
+                else if(this.type==="VIPER_SHORT_MISSILE"){ctx.fillStyle="#c299ff";ctx.shadowBlur=8;ctx.shadowColor="#a366ff";}
+                else if(this.type==="ENEMY_MISSILE"){ctx.fillStyle=this.isMineState?"#ff3300":"#ff0055";ctx.shadowBlur=8;ctx.shadowColor=ctx.fillStyle;}
+                else ctx.fillStyle=this.type==="PLAYER"?(stats.damage>1?'#d645ff':'#66fcf1'):'#ff4c4c';
+                ctx.beginPath();ctx.arc(this.x,this.y,this.isMineState?this.radius+2:this.radius,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+                if(this.isMineState){ctx.strokeStyle="rgba(255,51,0,.25)";ctx.beginPath();ctx.arc(this.x,this.y,this.radius+14,0,Math.PI*2);ctx.stroke();}
+            }
         }
-        class ExplodingNova {constructor(x,y,r,color,originType="PLAYER"){this.x=x;this.y=y;this.maxRadius=r;this.curRadius=0;this.color=color;this.active=true;this.originType=originType;}update(){this.curRadius+=5;if(this.curRadius>=this.maxRadius)this.active=false;if(this.active){if(this.originType==="ROBO"&&Math.hypot(player.x-this.x,player.y-this.y)<=this.curRadius+player.radius){hp=Math.max(0,hp-.8);hpVal.innerText=Math.floor(hp);if(hp<=0)triggerGameOver();}enemies.forEach(e=>{if(e.type!=="ROCK_BALL"&&e.active&&Math.hypot(e.x-this.x,e.y-this.y)<=this.curRadius+e.radius)e.hp-=this.originType==="PLAYER"?(.15+stats.flakLevel*.05):.15;});}}draw(){ctx.save();ctx.globalAlpha=1-this.curRadius/this.maxRadius;let g=ctx.createRadialGradient(this.x,this.y,this.curRadius*.1,this.x,this.y,this.curRadius);g.addColorStop(0,"#fff");g.addColorStop(.4,this.color);g.addColorStop(1,"transparent");ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.curRadius,0,Math.PI*2);ctx.fill();ctx.restore();}}
+
+        class ExplodingNova {
+            constructor(x,y,r,color,originType="PLAYER"){this.x=x;this.y=y;this.maxRadius=r;this.curRadius=0;this.color=color;this.active=true;this.originType=originType;}
+            update(){this.curRadius+=5;if(this.curRadius>=this.maxRadius)this.active=false;if(this.active){if(this.originType==="ROBO"&&Math.hypot(player.x-this.x,player.y-this.y)<=this.curRadius+player.radius){hp=Math.max(0,hp-.8);hpVal.innerText=Math.floor(hp);if(hp<=0)triggerGameOver();}enemies.forEach(e=>{if(e.type!=="ROCK_BALL"&&e.active&&Math.hypot(e.x-this.x,e.y-this.y)<=this.curRadius+e.radius)e.hp-=this.originType==="PLAYER"?(.15+stats.flakLevel*.05):.15;});}}
+            draw(){ctx.save();ctx.globalAlpha=1-this.curRadius/this.maxRadius;let g=ctx.createRadialGradient(this.x,this.y,this.curRadius*.1,this.x,this.y,this.curRadius);g.addColorStop(0,"#fff");g.addColorStop(.4,this.color);g.addColorStop(1,"transparent");ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,this.curRadius,0,Math.PI*2);ctx.fill();ctx.restore();}
+        }
         function triggerAoeExplosion(x,y){particles.push(new ExplodingNova(x,y,55+stats.flakLevel*15,"#ff4500","PLAYER"));triggerExplosion(x,y,"#ffaa00");}
         class Particle{constructor(x,y,color){this.x=x;this.y=y;this.color=color;this.angle=Math.random()*Math.PI*2;this.speed=Math.random()*4+1;this.alpha=1;this.decay=Math.random()*.04+.02;}update(){this.x+=Math.cos(this.angle)*this.speed;this.y+=Math.sin(this.angle)*this.speed;this.alpha-=this.decay;}draw(){ctx.save();ctx.globalAlpha=this.alpha;ctx.fillStyle=this.color;ctx.beginPath();ctx.arc(this.x,this.y,2.2,0,Math.PI*2);ctx.fill();ctx.restore();}}
         function triggerExplosion(x,y,color){for(let i=0;i<8;i++)particles.push(new Particle(x,y,color));}
@@ -495,6 +491,7 @@
             bullets.forEach(b=>{if(!b.active)return;if(["PLAYER","MISSILE","FLAK"].includes(b.type)){for(let i=enemies.length-1;i>=0;i--){let e=enemies[i];if(e.active&&Math.hypot(e.x-b.x,e.y-b.y)<=e.radius+b.radius){if(e.type!=="ROCK_BALL"){e.hp-=b.damage;if(b.type==="FLAK")triggerAoeExplosion(b.x,b.y);b.active=false;}else b.active=false;if(e.hp<=0){e.active=false;triggerExplosion(e.x,e.y,e.color);score+=e.isSubBoss?450:120;scoreVal.innerText=score;if(e.type==="ROBO")particles.push(new ExplodingNova(e.x,e.y,75,"#00b3ff","ROBO"));if(mapDepth%5===0){let remaining=countActiveSubbosses();subbossCountField.innerText=remaining;if(remaining<=0)exitPortal.active=true;}}break;}}}else if((b.type==="ENEMY"||b.type==="VIPER_SHORT_MISSILE")&&Math.hypot(player.x-b.x,player.y-b.y)<=player.radius+b.radius){b.active=false;hp=Math.max(0,hp-(b.type==="VIPER_SHORT_MISSILE"?12:7));hpVal.innerText=Math.floor(hp);triggerExplosion(player.x,player.y,"#ffcc00");if(hp<=0)triggerGameOver();}});
             bullets=bullets.filter(b=>b.active);enemies.forEach(e=>e.update());enemies.forEach(e=>{if(e.active&&Math.hypot(player.x-e.x,player.y-e.y)<=player.radius+e.radius){hp=Math.max(0,hp-(e.type==="ROCK_BALL"?3.5:(e.isSubBoss?1.8:1)));hpVal.innerText=Math.floor(hp);triggerExplosion(player.x,player.y,"#ff4c4c");if(hp<=0)triggerGameOver();}});enemies=enemies.filter(e=>e.active);particles=particles.filter(p=>p.alpha>0||p.active);particles.forEach(p=>p.update());if(exitPortal.active&&Math.hypot(player.x-exitPortal.x,player.y-exitPortal.y)<=player.radius+exitPortal.radius)triggerShop();
         }
+
         function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(grid[r][c]===1){let rx=c*TILE_SIZE,ry=r*TILE_SIZE;draw3DExtrudedBlock(ctx,rx,ry,TILE_SIZE,TILE_SIZE,6,"#151c24","#202b36");ctx.strokeStyle="#080b0f";ctx.strokeRect(rx,ry,TILE_SIZE,TILE_SIZE);}if(exitPortal.active){ctx.save();ctx.translate(exitPortal.x,exitPortal.y);let p=18+Math.sin(Date.now()*.008)*3;ctx.fillStyle="rgba(69,243,255,.12)";ctx.beginPath();ctx.arc(0,0,p+8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#45f3ff";ctx.beginPath();ctx.arc(0,0,p,0,Math.PI*2);ctx.fill();ctx.restore();}bullets.forEach(b=>b.draw());enemies.forEach(e=>e.draw());particles.forEach(p=>p.draw());draw3DShadow(ctx,player.radius);ctx.save();ctx.translate(player.x,player.y);ctx.save();ctx.rotate(player.angle);draw3DTreads(ctx,player.radius);draw3DExtrudedBlock(ctx,-15,-11,30,22,5,"#344456","#445970");ctx.fillStyle="#ff3333";ctx.fillRect(10,-2,6,4);ctx.restore();ctx.rotate(turretAngle);ctx.fillStyle="#46586e";ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#66fcf1";ctx.stroke();ctx.fillStyle="#8a9ba8";ctx.fillRect(0,-3,24,6);ctx.fillStyle=stats.damage>1?"#d645ff":"#45f3ff";ctx.fillRect(19,-2,5,4);ctx.restore();}
         function loop(){update();draw();requestAnimationFrame(loop);}
         function triggerShop(){gameState="SHOP";bossHpBarContainer.style.display="none";shopBalanceVal.innerText=score+" Sv";shopScreen.style.display="flex";}
@@ -511,5 +508,6 @@
         const tempo=120,secondsPerBeat=60/tempo;function playSequence(){if(audioCtx.state==='suspended')audioCtx.resume();const sequence=[110,82,110,73];let time=audioCtx.currentTime;sequence.forEach((freq,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type='triangle';osc.frequency.setValueAtTime(freq,time+i*secondsPerBeat);gain.gain.setValueAtTime(.03,time+i*secondsPerBeat);gain.gain.exponentialRampToValueAtTime(.001,time+i*secondsPerBeat+.4);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(time+i*secondsPerBeat);osc.stop(time+i*secondsPerBeat+.5);});setTimeout(playSequence,secondsPerBeat*4*1000);}
         window.addEventListener('mousedown',()=>{if(audioCtx.state==='suspended'){audioCtx.resume();playSequence();}},{once:true});
     </script>
+    <script src="enhancements.js"></script>
 </body>
 </html>
