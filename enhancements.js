@@ -179,6 +179,31 @@
     }
   };
 
+  // Preserve the original random spawning, but never allow an empty/super-sparse normal sector.
+  const baseGenerateRogueMap=generateRogueMap;
+  generateRogueMap=function(){
+    baseGenerateRogueMap();
+    if(mapDepth%5===0)return;
+    const combatEnemies=()=>enemies.filter(e=>e.active&&e.type!=='ROCK_BALL').length;
+    const minimumCombat=4;
+    if(combatEnemies()>=minimumCombat)return;
+    const pool=['DRONE','ROBO','SHOOTING_TANK','CHASING_TANK','FLAME_TANK','TESLA_PYLON','VIPER_TOWER'];
+    const spots=[];
+    for(let r=1;r<ROWS-1;r++)for(let c=1;c<COLS-1;c++){
+      if(!grid[r]||grid[r][c]!==0)continue;
+      const x=c*TILE_SIZE+TILE_SIZE/2,y=r*TILE_SIZE+TILE_SIZE/2;
+      if(Math.hypot(x-player.x,y-player.y)<TILE_SIZE*2.4)continue;
+      if(Math.hypot(x-exitPortal.x,y-exitPortal.y)<TILE_SIZE*1.7)continue;
+      if(enemies.some(e=>Math.hypot(e.x-x,e.y-y)<TILE_SIZE*.8))continue;
+      if(validFloorForEnemy(x,y,14))spots.push({x,y});
+    }
+    for(let i=spots.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[spots[i],spots[j]]=[spots[j],spots[i]]}
+    while(combatEnemies()<minimumCombat&&spots.length){
+      const p=spots.pop();
+      enemies.push(new Enemy(p.x,p.y,pool[Math.floor(Math.random()*pool.length)]));
+    }
+  };
+
   stats.speedLevel=1;
   stats.hullLevel=1;
   stats.damageLevel=1;
