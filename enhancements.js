@@ -25,6 +25,15 @@
   `;
   document.head.appendChild(style);
 
+  // PWA/browser wiring. Uses the existing repo icons/manifest/service worker only.
+  const addLink=(rel,href,attrs={})=>{let el=document.querySelector(`link[rel="${rel}"]`);if(!el){el=document.createElement('link');el.rel=rel;document.head.appendChild(el)}el.href=href;Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el};
+  addLink('manifest','./manifest.webmanifest');
+  addLink('icon','./favicon-32x32.png',{type:'image/png',sizes:'32x32'});
+  addLink('apple-touch-icon','./apple-touch-icon.png');
+  let theme=document.querySelector('meta[name="theme-color"]');if(!theme){theme=document.createElement('meta');theme.name='theme-color';document.head.appendChild(theme)}theme.content='#06070a';
+  let mobileCapable=document.querySelector('meta[name="apple-mobile-web-app-capable"]');if(!mobileCapable){mobileCapable=document.createElement('meta');mobileCapable.name='apple-mobile-web-app-capable';document.head.appendChild(mobileCapable)}mobileCapable.content='yes';
+  if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
+
   // Show current/max hull without replacing the original hpVal element reference.
   const hpParent = hpVal.parentElement;
   Array.from(hpParent.childNodes).forEach(node => {
@@ -43,9 +52,6 @@
     shopBalanceVal.innerText = score + ' Sv';
   }
 
-  // Preserve the original 56px world/assets and uniformly scale the complete
-  // canvas down on phones. That keeps every original radius, wall, tank and
-  // projectile proportion unchanged while ensuring the 12x12 minimum map fits.
   resizeViewport = function(){
     const hudHeight = document.getElementById('hud').offsetHeight;
     const availableW = Math.max(240, window.innerWidth);
@@ -61,8 +67,6 @@
     ROWS = Math.max(12, Math.floor(canvas.height / TILE_SIZE));
   };
 
-  // Touch controls feed the original keyboard/fire variables; original update(),
-  // tank movement, weapon logic and rendering remain intact.
   function makePad(kind,label){
     const pad=document.createElement('div');
     pad.className='tc-pad '+kind;
@@ -72,7 +76,6 @@
   }
   const movePad=makePad('move','MOVE');
   const aimPad=makePad('aim','AIM / FIRE');
-
   const touchKeys={up:false,down:false,left:false,right:false};
   function applyTouchKeys(){
     keys['KeyW']=touchKeys.up; keys['ArrowUp']=touchKeys.up;
@@ -105,9 +108,8 @@
     el.addEventListener('touchend',e=>{
       if([...e.changedTouches].some(t=>t.identifier===id)){
         id=null;stick.style.transform='';
-        if(mode==='move'){
-          touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;applyTouchKeys();
-        }else isMouseDown=false;
+        if(mode==='move'){touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;applyTouchKeys();}
+        else isMouseDown=false;
       }
     },{passive:false});
     el.addEventListener('touchcancel',()=>{
@@ -118,14 +120,12 @@
   }
   setupPad(movePad,'move'); setupPad(aimPad,'aim');
 
-  // Start the original music engine on first touch as well as first mouse click.
   let touchMusicStarted=false;
   window.addEventListener('touchstart',()=>{
     if(touchMusicStarted)return;touchMusicStarted=true;
     try{if(audioCtx.state==='suspended')audioCtx.resume();playSequence()}catch(e){}
   },{once:true,passive:true});
 
-  // Salvage-round anti-stuck layer. This does not replace Enemy.draw().
   function validFloorForEnemy(x,y,r){return !checkWallCollision(x,y,r)}
   function bestAdjacentFloor(enemy){
     const c=Math.floor(enemy.x/TILE_SIZE),r=Math.floor(enemy.y/TILE_SIZE);
@@ -159,7 +159,6 @@
     }
   };
 
-  // Economy: hard-cap only upgrades that can make control/performance silly.
   stats.speedLevel=1;
   stats.hullLevel=1;
   stats.damageLevel=1;
@@ -211,11 +210,9 @@
     repair.querySelector('button').onclick=repairTank;
     shopGrid.append(repair);
   }
-
   triggerShop=function(){
     gameState='SHOP';bossHpBarContainer.style.display='none';syncHullHud();renderEnhancedShop();shopScreen.style.display='flex';
   };
-
   buyUpgrade=function(type){
     if(isMax(type))return;
     const cost=upgradeCost(type);
@@ -231,7 +228,6 @@
     try{playTone(440,'sine',.2,.2)}catch(e){}
     syncHullHud();renderEnhancedShop();
   };
-
   window.repairTank=function(){
     const cost=repairCost();if(!cost)return;
     if(score<cost){try{playTone(110,'square',.3,.1)}catch(e){};alert('Insufficient Salvage Value!');return}
@@ -239,15 +235,11 @@
     try{playTone(520,'sine',.22,.15)}catch(e){}
     syncHullHud();renderEnhancedShop();
   };
-
-  // Keep repair meaningful: only a small automatic recovery between sectors.
   closeShop=function(){
     mapDepth++;mapVal.innerText=mapDepth;
     hp=Math.min(maxHp,hp+Math.max(5,maxHp*.08));
     syncHullHud();shopScreen.style.display='none';gameState='PLAYING';generateRogueMap();
   };
-
-  // Preserve original visuals while making open-ended flak grow more gently.
   triggerAoeExplosion=function(x,y){
     const radius=55+Math.min(120,Math.log2(stats.flakLevel+1)*28);
     particles.push(new ExplodingNova(x,y,radius,'#ff4500','PLAYER'));
@@ -262,15 +254,12 @@
       enemies.forEach(e=>{if(e.type!=='ROCK_BALL'&&e.active&&Math.hypot(e.x-this.x,e.y-this.y)<=this.curRadius+e.radius)e.hp-=factor});
     }
   };
-
-  // Reset enhancement-only progression on a new run.
   const baseReset=resetGame;
   resetGame=function(){
     baseReset();
     stats.speedLevel=1;stats.hullLevel=1;stats.damageLevel=1;stats.repairCount=0;stats.damage=1;
     maxHp=100;hp=100;player.speed=3.4;syncHullHud();
   };
-
   resizeViewport();generateRogueMap();syncHullHud();
   window.addEventListener('orientationchange',()=>setTimeout(()=>{resizeViewport();generateRogueMap()},180));
 })();
