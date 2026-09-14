@@ -8,11 +8,11 @@
   style.textContent = `
     html,body{min-height:100dvh}
     canvas{touch-action:none}
-    .tc-pad{display:none;position:absolute;bottom:max(14px,env(safe-area-inset-bottom));width:112px;height:112px;border-radius:50%;background:rgba(24,34,43,.38);border:1px solid rgba(255,255,255,.20);z-index:6;touch-action:none}
+    .tc-pad{display:none;position:absolute;bottom:calc(env(safe-area-inset-bottom) + 72px);width:112px;height:112px;border-radius:50%;background:rgba(24,34,43,.38);border:1px solid rgba(255,255,255,.20);z-index:6;touch-action:none;overscroll-behavior:none}
     .tc-pad.move{left:14px}.tc-pad.aim{right:14px}
-    .tc-stick{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:rgba(102,252,241,.68);box-shadow:0 0 12px rgba(102,252,241,.22)}
+    .tc-stick{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:rgba(102,252,241,.68);box-shadow:0 0 12px rgba(102,252,241,.22);pointer-events:none}
     .tc-pad.aim .tc-stick{background:rgba(255,204,0,.68)}
-    .tc-pad-label{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:9px;font-weight:bold;color:#ddd;letter-spacing:1px}
+    .tc-pad-label{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:9px;font-weight:bold;color:#ddd;letter-spacing:1px;pointer-events:none}
     .shop-item.tc-repair{border-color:rgba(124,255,139,.45)}
     .shop-item.tc-repair button{background:#7cff8b}
     .shop-item button:disabled{opacity:.45;cursor:default;box-shadow:none}
@@ -22,6 +22,7 @@
       #hud{padding:7px 10px}
       .stat{font-size:12px}
     }
+    @media(max-height:740px) and (pointer:coarse){.tc-pad{bottom:calc(env(safe-area-inset-bottom) + 54px)}}
   `;
   document.head.appendChild(style);
 
@@ -85,38 +86,54 @@
   }
   function setupPad(el,mode){
     const stick=el.querySelector('.tc-stick');
-    let id=null;
+    let pointerId=null;
     const center=56,max=38;
-    function move(e){
-      const t=[...e.touches].find(v=>v.identifier===id); if(!t)return;
+    function reset(){
+      stick.style.transform='';
+      if(mode==='move'){
+        touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;
+        applyTouchKeys();
+      }else{
+        isMouseDown=false;
+      }
+      pointerId=null;
+    }
+    function moveFromPointer(e){
+      if(e.pointerId!==pointerId)return;
       const r=el.getBoundingClientRect();
-      const x=t.clientX-r.left-center,y=t.clientY-r.top-center;
+      const x=e.clientX-r.left-center,y=e.clientY-r.top-center;
       const mag=Math.hypot(x,y),d=Math.min(max,mag),nx=mag?x/mag:0,ny=mag?y/mag:0;
       stick.style.transform=`translate(${nx*d}px,${ny*d}px)`;
       if(mode==='move'){
-        const dead=.28;
+        const dead=.25;
         touchKeys.left=nx<-dead; touchKeys.right=nx>dead;
         touchKeys.up=ny<-dead; touchKeys.down=ny>dead;
         applyTouchKeys();
-      }else if(mag>7){
-        turretAngle=Math.atan2(ny,nx);
-        isMouseDown=true;
+      }else{
+        if(mag>6){
+          turretAngle=Math.atan2(ny,nx);
+          isMouseDown=true;
+        }else{
+          isMouseDown=false;
+        }
       }
     }
-    el.addEventListener('touchstart',e=>{e.preventDefault();if(id===null){id=e.changedTouches[0].identifier;move(e)}},{passive:false});
-    el.addEventListener('touchmove',e=>{e.preventDefault();move(e)},{passive:false});
-    el.addEventListener('touchend',e=>{
-      if([...e.changedTouches].some(t=>t.identifier===id)){
-        id=null;stick.style.transform='';
-        if(mode==='move'){touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;applyTouchKeys();}
-        else isMouseDown=false;
-      }
-    },{passive:false});
-    el.addEventListener('touchcancel',()=>{
-      id=null;stick.style.transform='';
-      if(mode==='move'){touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;applyTouchKeys()}
-      else isMouseDown=false;
-    },{passive:false});
+    el.addEventListener('pointerdown',e=>{
+      if(pointerId!==null)return;
+      e.preventDefault();
+      pointerId=e.pointerId;
+      try{el.setPointerCapture(pointerId)}catch(_){}
+      moveFromPointer(e);
+    });
+    el.addEventListener('pointermove',e=>{if(e.pointerId===pointerId){e.preventDefault();moveFromPointer(e)}});
+    el.addEventListener('pointerup',e=>{
+      if(e.pointerId!==pointerId)return;
+      e.preventDefault();
+      try{el.releasePointerCapture(pointerId)}catch(_){}
+      reset();
+    });
+    el.addEventListener('pointercancel',e=>{if(e.pointerId===pointerId)reset()});
+    el.addEventListener('lostpointercapture',e=>{if(e.pointerId===pointerId)reset()});
   }
   setupPad(movePad,'move'); setupPad(aimPad,'aim');
 
