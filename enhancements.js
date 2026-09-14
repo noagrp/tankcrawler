@@ -43,16 +43,20 @@
     shopBalanceVal.innerText = score + ' Sv';
   }
 
-  // Mobile-friendly world sizing: keep the original map/render system, but make
-  // the minimum 12-tile grid fit inside the phone viewport instead of clipping.
+  // Preserve the original 56px world/assets and uniformly scale the complete
+  // canvas down on phones. That keeps every original radius, wall, tank and
+  // projectile proportion unchanged while ensuring the 12x12 minimum map fits.
   resizeViewport = function(){
     const hudHeight = document.getElementById('hud').offsetHeight;
-    const availableW = window.innerWidth;
+    const availableW = Math.max(240, window.innerWidth);
     const availableH = Math.max(240, window.innerHeight - hudHeight);
-    const coarse = matchMedia('(pointer:coarse)').matches || window.innerWidth <= 640;
-    TILE_SIZE = coarse ? Math.max(30, Math.min(56, Math.floor(Math.min(availableW, availableH) / 12))) : 56;
-    canvas.width = availableW;
-    canvas.height = availableH;
+    TILE_SIZE = 56;
+    const minWorld = TILE_SIZE * 12;
+    const logicalScale = Math.max(1, minWorld / availableW, minWorld / availableH);
+    canvas.style.width = availableW + 'px';
+    canvas.style.height = availableH + 'px';
+    canvas.width = Math.ceil(availableW * logicalScale);
+    canvas.height = Math.ceil(availableH * logicalScale);
     COLS = Math.max(12, Math.floor(canvas.width / TILE_SIZE));
     ROWS = Math.max(12, Math.floor(canvas.height / TILE_SIZE));
   };
@@ -106,7 +110,7 @@
         }else isMouseDown=false;
       }
     },{passive:false});
-    el.addEventListener('touchcancel',e=>{
+    el.addEventListener('touchcancel',()=>{
       id=null;stick.style.transform='';
       if(mode==='move'){touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;applyTouchKeys()}
       else isMouseDown=false;
