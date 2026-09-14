@@ -1,0 +1,272 @@
+(() => {
+  // Tank Crawler enhancement layer. Original drawing/audio routines remain in index.html.
+  const wrapper = document.getElementById('gameWrapper');
+  const shopGrid = document.querySelector('#shopScreen .shop-grid');
+
+  // Mobile layout/control styles only; no game asset styles are replaced.
+  const style = document.createElement('style');
+  style.textContent = `
+    html,body{min-height:100dvh}
+    canvas{touch-action:none}
+    .tc-pad{display:none;position:absolute;bottom:max(14px,env(safe-area-inset-bottom));width:112px;height:112px;border-radius:50%;background:rgba(24,34,43,.38);border:1px solid rgba(255,255,255,.20);z-index:6;touch-action:none}
+    .tc-pad.move{left:14px}.tc-pad.aim{right:14px}
+    .tc-stick{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:rgba(102,252,241,.68);box-shadow:0 0 12px rgba(102,252,241,.22)}
+    .tc-pad.aim .tc-stick{background:rgba(255,204,0,.68)}
+    .tc-pad-label{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:9px;font-weight:bold;color:#ddd;letter-spacing:1px}
+    .shop-item.tc-repair{border-color:rgba(124,255,139,.45)}
+    .shop-item.tc-repair button{background:#7cff8b}
+    .shop-item button:disabled{opacity:.45;cursor:default;box-shadow:none}
+    @media(max-width:640px),(pointer:coarse){
+      .tc-pad{display:block}
+      #instructions{display:none}
+      #hud{padding:7px 10px}
+      .stat{font-size:12px}
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Show current/max hull without replacing the original hpVal element reference.
+  const hpParent = hpVal.parentElement;
+  Array.from(hpParent.childNodes).forEach(node => {
+    if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('%')) node.textContent = node.textContent.replace('%','');
+  });
+  const slash = document.createTextNode('/');
+  const maxHpDisplay = document.createElement('span');
+  maxHpDisplay.id = 'maxHpVal';
+  maxHpDisplay.textContent = maxHp;
+  hpVal.after(slash, maxHpDisplay);
+
+  function syncHullHud(){
+    hpVal.innerText = Math.floor(hp);
+    maxHpDisplay.innerText = Math.floor(maxHp);
+    scoreVal.innerText = score;
+    shopBalanceVal.innerText = score + ' Sv';
+  }
+
+  // Mobile-friendly world sizing: keep the original map/render system, but make
+  // the minimum 12-tile grid fit inside the phone viewport instead of clipping.
+  resizeViewport = function(){
+    const hudHeight = document.getElementById('hud').offsetHeight;
+    const availableW = window.innerWidth;
+    const availableH = Math.max(240, window.innerHeight - hudHeight);
+    const coarse = matchMedia('(pointer:coarse)').matches || window.innerWidth <= 640;
+    TILE_SIZE = coarse ? Math.max(30, Math.min(56, Math.floor(Math.min(availableW, availableH) / 12))) : 56;
+    canvas.width = availableW;
+    canvas.height = availableH;
+    COLS = Math.max(12, Math.floor(canvas.width / TILE_SIZE));
+    ROWS = Math.max(12, Math.floor(canvas.height / TILE_SIZE));
+  };
+
+  // Touch controls feed the original keyboard/fire variables; original update(),
+  // tank movement, weapon logic and rendering remain intact.
+  function makePad(kind,label){
+    const pad=document.createElement('div');
+    pad.className='tc-pad '+kind;
+    pad.innerHTML='<div class="tc-stick"></div><div class="tc-pad-label">'+label+'</div>';
+    wrapper.appendChild(pad);
+    return pad;
+  }
+  const movePad=makePad('move','MOVE');
+  const aimPad=makePad('aim','AIM / FIRE');
+
+  const touchKeys={up:false,down:false,left:false,right:false};
+  function applyTouchKeys(){
+    keys['KeyW']=touchKeys.up; keys['ArrowUp']=touchKeys.up;
+    keys['KeyS']=touchKeys.down; keys['ArrowDown']=touchKeys.down;
+    keys['KeyA']=touchKeys.left; keys['ArrowLeft']=touchKeys.left;
+    keys['KeyD']=touchKeys.right; keys['ArrowRight']=touchKeys.right;
+  }
+  function setupPad(el,mode){
+    const stick=el.querySelector('.tc-stick');
+    let id=null;
+    const center=56,max=38;
+    function move(e){
+      const t=[...e.touches].find(v=>v.identifier===id); if(!t)return;
+      const r=el.getBoundingClientRect();
+      const x=t.clientX-r.left-center,y=t.clientY-r.top-center;
+      const mag=Math.hypot(x,y),d=Math.min(max,mag),nx=mag?x/mag:0,ny=mag?y/mag:0;
+      stick.style.transform=`translate(${nx*d}px,${ny*d}px)`;
+      if(mode==='move'){
+        const dead=.28;
+        touchKeys.left=nx<-dead; touchKeys.right=nx>dead;
+        touchKeys.up=ny<-dead; touchKeys.down=ny>dead;
+        applyTouchKeys();
+      }else if(mag>7){
+        turretAngle=Math.atan2(ny,nx);
+        isMouseDown=true;
+      }
+    }
+    el.addEventListener('touchstart',e=>{e.preventDefault();if(id===null){id=e.changedTouches[0].identifier;move(e)}},{passive:false});
+    el.addEventListener('touchmove',e=>{e.preventDefault();move(e)},{passive:false});
+    el.addEventListener('touchend',e=>{
+      if([...e.changedTouches].some(t=>t.identifier===id)){
+        id=null;stick.style.transform='';
+        if(mode==='move'){
+          touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;applyTouchKeys();
+        }else isMouseDown=false;
+      }
+    },{passive:false});
+    el.addEventListener('touchcancel',e=>{
+      id=null;stick.style.transform='';
+      if(mode==='move'){touchKeys.up=touchKeys.down=touchKeys.left=touchKeys.right=false;applyTouchKeys()}
+      else isMouseDown=false;
+    },{passive:false});
+  }
+  setupPad(movePad,'move'); setupPad(aimPad,'aim');
+
+  // Start the original music engine on first touch as well as first mouse click.
+  let touchMusicStarted=false;
+  window.addEventListener('touchstart',()=>{
+    if(touchMusicStarted)return;touchMusicStarted=true;
+    try{if(audioCtx.state==='suspended')audioCtx.resume();playSequence()}catch(e){}
+  },{once:true,passive:true});
+
+  // Salvage-round anti-stuck layer. This does not replace Enemy.draw().
+  function validFloorForEnemy(x,y,r){return !checkWallCollision(x,y,r)}
+  function bestAdjacentFloor(enemy){
+    const c=Math.floor(enemy.x/TILE_SIZE),r=Math.floor(enemy.y/TILE_SIZE);
+    const options=[[1,0],[-1,0],[0,1],[0,-1]]
+      .map(([dx,dy])=>({c:c+dx,r:r+dy}))
+      .filter(p=>p.r>0&&p.c>0&&p.r<ROWS-1&&p.c<COLS-1&&grid[p.r]&&grid[p.r][p.c]===0)
+      .map(p=>({x:p.c*TILE_SIZE+TILE_SIZE/2,y:p.r*TILE_SIZE+TILE_SIZE/2}))
+      .filter(p=>validFloorForEnemy(p.x,p.y,enemy.radius));
+    if(!options.length)return null;
+    options.sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y));
+    return options[0];
+  }
+  const originalEnemyUpdate=Enemy.prototype.update;
+  Enemy.prototype.update=function(){
+    const ox=this.x,oy=this.y;
+    originalEnemyUpdate.call(this);
+    if(!this.active)return;
+    if(!validFloorForEnemy(this.x,this.y,this.radius)){
+      const p=bestAdjacentFloor(this);
+      if(p){this.x=p.x;this.y=p.y}
+    }
+    if(['DRONE','ROBO','CHASING_TANK'].includes(this.type)&&this.speed>0&&Math.hypot(player.x-this.x,player.y-this.y)<340){
+      const moved=Math.hypot(this.x-ox,this.y-oy);
+      this._tcStuck=moved<.12?(this._tcStuck||0)+1:0;
+      if(this._tcStuck>50){
+        const p=bestAdjacentFloor(this);
+        if(p){this.x=p.x;this.y=p.y}
+        if(this.type==='ROBO'){this.dirTimer=0;this.vx=0;this.vy=0}
+        this._tcStuck=0;
+      }
+    }
+  };
+
+  // Economy: hard-cap only upgrades that can make control/performance silly.
+  stats.speedLevel=1;
+  stats.hullLevel=1;
+  stats.damageLevel=1;
+  stats.repairCount=0;
+  const CAPS={fireRate:6,spread:5,speed:5};
+  const BASE={fireRate:300,spread:500,speed:300,flak:400,missileUpg:400,damage:450,hullMax:400};
+  function levelFor(type){
+    if(type==='fireRate')return stats.fireRateLevel;
+    if(type==='spread')return stats.spread;
+    if(type==='speed')return stats.speedLevel;
+    if(type==='flak')return stats.flakLevel;
+    if(type==='missileUpg')return stats.missileLevel;
+    if(type==='damage')return stats.damageLevel;
+    return stats.hullLevel;
+  }
+  function isMax(type){return CAPS[type]&&levelFor(type)>=CAPS[type]}
+  function upgradeCost(type){
+    const level=levelFor(type);
+    const growth=CAPS[type]?1.55:1.32;
+    return Math.round(BASE[type]*Math.pow(growth,Math.max(0,level-1))/50)*50;
+  }
+  function repairCost(){
+    const missing=Math.max(0,maxHp-hp);if(!missing)return 0;
+    const hullFactor=1+(maxHp-100)/350;
+    const repeatFactor=1+stats.repairCount*.10;
+    return Math.max(100,Math.round((90+missing*2.2)*hullFactor*repeatFactor/50)*50);
+  }
+  function item(type,name,desc){
+    const div=document.createElement('div');div.className='shop-item';
+    const max=isMax(type),cost=upgradeCost(type),lv=levelFor(type);
+    div.innerHTML=`<div class="shop-info"><strong>${name}</strong><p>${desc} · ${max?'MAX':('Lv '+lv+(CAPS[type]?'/'+CAPS[type]:''))}</p></div><button ${max?'disabled':''}>${max?'MAX':cost+' Sv'}</button>`;
+    div.querySelector('button').onclick=()=>buyUpgrade(type);
+    return div;
+  }
+  function renderEnhancedShop(){
+    shopGrid.innerHTML='';
+    shopGrid.append(
+      item('fireRate','Shooting Speed Coils','Capped cannon reload speed'),
+      item('spread','Projectile Multibarrels','Capped at five-way spread'),
+      item('speed','Overcharged Thrusters','Capped movement speed'),
+      item('damage','Heavy Cannon Core','Open-ended main cannon damage'),
+      item('flak','Thermal Flak Shells','Open-ended flak power and radius'),
+      item('missileUpg','Homing Missile Calibrator','Open-ended seeker power'),
+      item('hullMax','Dreadnought Hull Armor','Open-ended maximum hull')
+    );
+    const rc=repairCost(),missing=Math.max(0,Math.ceil(maxHp-hp));
+    const repair=document.createElement('div');repair.className='shop-item tc-repair';
+    repair.innerHTML=`<div class="shop-info"><strong>Field Repair</strong><p>Restore all missing hull · ${missing} HP damaged</p></div><button ${rc===0?'disabled':''}>${rc===0?'FULL':rc+' Sv'}</button>`;
+    repair.querySelector('button').onclick=repairTank;
+    shopGrid.append(repair);
+  }
+
+  triggerShop=function(){
+    gameState='SHOP';bossHpBarContainer.style.display='none';syncHullHud();renderEnhancedShop();shopScreen.style.display='flex';
+  };
+
+  buyUpgrade=function(type){
+    if(isMax(type))return;
+    const cost=upgradeCost(type);
+    if(score<cost){try{playTone(110,'square',.3,.1)}catch(e){};alert('Insufficient Salvage Value!');return}
+    score-=cost;
+    if(type==='fireRate')stats.fireRateLevel++;
+    else if(type==='spread')stats.spread=Math.min(5,stats.spread+1);
+    else if(type==='speed'){stats.speedLevel++;player.speed=Math.min(5.0,player.speed+.4)}
+    else if(type==='damage'){stats.damageLevel++;stats.damage+=Math.max(.08,.32/(1+(stats.damageLevel-2)*.10))}
+    else if(type==='flak')stats.flakLevel++;
+    else if(type==='missileUpg')stats.missileLevel++;
+    else if(type==='hullMax'){stats.hullLevel++;maxHp+=20;hp=Math.min(maxHp,hp+10)}
+    try{playTone(440,'sine',.2,.2)}catch(e){}
+    syncHullHud();renderEnhancedShop();
+  };
+
+  window.repairTank=function(){
+    const cost=repairCost();if(!cost)return;
+    if(score<cost){try{playTone(110,'square',.3,.1)}catch(e){};alert('Insufficient Salvage Value!');return}
+    score-=cost;hp=maxHp;stats.repairCount++;
+    try{playTone(520,'sine',.22,.15)}catch(e){}
+    syncHullHud();renderEnhancedShop();
+  };
+
+  // Keep repair meaningful: only a small automatic recovery between sectors.
+  closeShop=function(){
+    mapDepth++;mapVal.innerText=mapDepth;
+    hp=Math.min(maxHp,hp+Math.max(5,maxHp*.08));
+    syncHullHud();shopScreen.style.display='none';gameState='PLAYING';generateRogueMap();
+  };
+
+  // Preserve original visuals while making open-ended flak grow more gently.
+  triggerAoeExplosion=function(x,y){
+    const radius=55+Math.min(120,Math.log2(stats.flakLevel+1)*28);
+    particles.push(new ExplodingNova(x,y,radius,'#ff4500','PLAYER'));
+    triggerExplosion(x,y,'#ffaa00');
+  };
+  const originalNovaUpdate=ExplodingNova.prototype.update;
+  ExplodingNova.prototype.update=function(){
+    if(this.originType!=='PLAYER'){return originalNovaUpdate.call(this)}
+    this.curRadius+=5.0;if(this.curRadius>=this.maxRadius)this.active=false;
+    if(this.active){
+      const factor=.15+Math.min(1.25,Math.log2(stats.flakLevel+1)*.18);
+      enemies.forEach(e=>{if(e.type!=='ROCK_BALL'&&e.active&&Math.hypot(e.x-this.x,e.y-this.y)<=this.curRadius+e.radius)e.hp-=factor});
+    }
+  };
+
+  // Reset enhancement-only progression on a new run.
+  const baseReset=resetGame;
+  resetGame=function(){
+    baseReset();
+    stats.speedLevel=1;stats.hullLevel=1;stats.damageLevel=1;stats.repairCount=0;stats.damage=1;
+    maxHp=100;hp=100;player.speed=3.4;syncHullHud();
+  };
+
+  resizeViewport();generateRogueMap();syncHullHud();
+  window.addEventListener('orientationchange',()=>setTimeout(()=>{resizeViewport();generateRogueMap()},180));
+})();
