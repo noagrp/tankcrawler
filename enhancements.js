@@ -8,7 +8,7 @@
   style.textContent = `
     html,body{height:100%;height:100dvh;min-height:0}\n    body{max-height:100dvh}\n    #gameWrapper{flex:1 1 0;min-height:0;height:0;overflow:hidden}
     canvas{touch-action:none}
-    .tc-pad{display:none;position:absolute;bottom:calc(env(safe-area-inset-bottom) + 112px);width:112px;height:112px;border-radius:50%;background:rgba(24,34,43,.38);border:1px solid rgba(255,255,255,.20);z-index:6;touch-action:none;overscroll-behavior:none}
+    .tc-pad{display:none;position:absolute;bottom:calc(env(safe-area-inset-bottom) + 88px);width:112px;height:112px;border-radius:50%;background:rgba(24,34,43,.38);border:1px solid rgba(255,255,255,.20);z-index:6;touch-action:none;overscroll-behavior:none}
     .tc-pad.move{left:14px}.tc-pad.aim{right:14px}
     .tc-stick{position:absolute;left:36px;top:36px;width:40px;height:40px;border-radius:50%;background:rgba(102,252,241,.68);box-shadow:0 0 12px rgba(102,252,241,.22);pointer-events:none}
     .tc-pad.aim .tc-stick{background:rgba(255,204,0,.68)}
@@ -25,7 +25,7 @@
       #shopScreen .shop-grid{flex:0 0 auto;width:100%}
       #shopScreen .close-shop-btn{flex:0 0 auto;margin-bottom:12px}
     }
-    @media(max-height:740px) and (pointer:coarse){.tc-pad{bottom:calc(env(safe-area-inset-bottom) + 88px)}}
+    @media(max-height:740px) and (pointer:coarse){.tc-pad{bottom:calc(env(safe-area-inset-bottom) + 64px)}}
   `;
   document.head.appendChild(style);
 
