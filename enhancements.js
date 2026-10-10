@@ -6,7 +6,7 @@
   // Mobile layout/control styles only; no game asset styles are replaced.
   const style = document.createElement('style');
   style.textContent = `
-    html,body{min-height:100dvh}
+    html,body{height:100%;height:100dvh;min-height:0}\n    body{max-height:100dvh}\n    #gameWrapper{flex:1 1 0;min-height:0;height:0;overflow:hidden}
     canvas{touch-action:none}
     .tc-pad{display:none;position:absolute;bottom:calc(env(safe-area-inset-bottom) + 112px);width:112px;height:112px;border-radius:50%;background:rgba(24,34,43,.38);border:1px solid rgba(255,255,255,.20);z-index:6;touch-action:none;overscroll-behavior:none}
     .tc-pad.move{left:14px}.tc-pad.aim{right:14px}
@@ -59,7 +59,7 @@
   resizeViewport = function(){
     const hudHeight = document.getElementById('hud').offsetHeight;
     const availableW = Math.max(240, window.innerWidth);
-    const availableH = Math.max(240, window.innerHeight - hudHeight);
+    const availableH = Math.max(1, wrapper.clientHeight || window.innerHeight - hudHeight);
     TILE_SIZE = 56;
     const minWorld = TILE_SIZE * 12;
     const logicalScale = Math.max(1, minWorld / availableW, minWorld / availableH);
