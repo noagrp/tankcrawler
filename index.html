@@ -318,8 +318,8 @@
             const canvasMouseY = (e.clientY - rect.top) * scaleY;
             turretAngle = Math.atan2(canvasMouseY - player.y, canvasMouseX - player.x);
         });
-        window.addEventListener('mousedown', () => isMouseDown = true);
-        window.addEventListener('mouseup', () => isMouseDown = false);
+        window.addEventListener('mousedown', (e) => { if(e.sourceCapabilities?.firesTouchEvents) return; isMouseDown = true; });
+        window.addEventListener('mouseup', (e) => { if(e.sourceCapabilities?.firesTouchEvents) return; isMouseDown = false; });
 
         function countActiveSubbosses() {
             return enemies.filter(e => e.isSubBoss && e.active).length;
@@ -493,7 +493,22 @@
         }
 
         function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(grid[r][c]===1){let rx=c*TILE_SIZE,ry=r*TILE_SIZE;draw3DExtrudedBlock(ctx,rx,ry,TILE_SIZE,TILE_SIZE,6,"#151c24","#202b36");ctx.strokeStyle="#080b0f";ctx.strokeRect(rx,ry,TILE_SIZE,TILE_SIZE);}if(exitPortal.active){ctx.save();ctx.translate(exitPortal.x,exitPortal.y);let p=18+Math.sin(Date.now()*.008)*3;ctx.fillStyle="rgba(69,243,255,.12)";ctx.beginPath();ctx.arc(0,0,p+8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#45f3ff";ctx.beginPath();ctx.arc(0,0,p,0,Math.PI*2);ctx.fill();ctx.restore();}bullets.forEach(b=>b.draw());enemies.forEach(e=>e.draw());particles.forEach(p=>p.draw());draw3DShadow(ctx,player.radius);ctx.save();ctx.translate(player.x,player.y);ctx.save();ctx.rotate(player.angle);draw3DTreads(ctx,player.radius);draw3DExtrudedBlock(ctx,-15,-11,30,22,5,"#344456","#445970");ctx.fillStyle="#ff3333";ctx.fillRect(10,-2,6,4);ctx.restore();ctx.rotate(turretAngle);ctx.fillStyle="#46586e";ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#66fcf1";ctx.stroke();ctx.fillStyle="#8a9ba8";ctx.fillRect(0,-3,24,6);ctx.fillStyle=stats.damage>1?"#d645ff":"#45f3ff";ctx.fillRect(19,-2,5,4);ctx.restore();}
-        function loop(){update();draw();requestAnimationFrame(loop);}
+        let lastFrameTime=0,simulationDebt=0;
+        const FIXED_STEP=1000/60;
+        function loop(timestamp){
+            if(!lastFrameTime)lastFrameTime=timestamp;
+            const elapsed=Math.min(100,timestamp-lastFrameTime);
+            lastFrameTime=timestamp;
+            simulationDebt=Math.min(simulationDebt+elapsed,FIXED_STEP*5);
+            let steps=0;
+            while(simulationDebt>=FIXED_STEP&&steps<5){
+                update();
+                simulationDebt-=FIXED_STEP;
+                steps++;
+            }
+            draw();
+            requestAnimationFrame(loop);
+        }
         function triggerShop(){gameState="SHOP";bossHpBarContainer.style.display="none";shopBalanceVal.innerText=score+" Sv";shopScreen.style.display="flex";}
         function buyUpgrade(type,cost){if(type==='spread'&&stats.spread>=5){alert("Already at Maximum Multibarrel Capacity!");return;}if(type==='speed'&&player.speed>=8.2){alert("Chassis Thrusters are already at maximum velocity!");return;}if(score>=cost){score-=cost;scoreVal.innerText=score;shopBalanceVal.innerText=score+" Sv";if(type==='fireRate')stats.fireRateLevel++;if(type==='spread')stats.spread=Math.min(5,stats.spread+1);if(type==='flak')stats.flakLevel++;if(type==='missileUpg')stats.missileLevel++;if(type==='speed')player.speed+=.4;if(type==='hullMax')maxHp+=25;hp=maxHp;hpVal.innerText=Math.floor(hp);alert("Hardware Module Successfully Adjusted!");}else alert("Insufficient Salvage Value!");}
         function closeShop(){mapDepth++;mapVal.innerText=mapDepth;hp=Math.min(maxHp,hp+maxHp*.25);hpVal.innerText=Math.floor(hp);shopScreen.style.display="none";gameState="PLAYING";generateRogueMap();}
